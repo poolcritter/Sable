@@ -1,5 +1,17 @@
 # Sable Client Changelog
 
+## 1.9.0 (2026-03-16)
+
+### Features
+
+* Push notifications now use `event_id_only` format — Sygnal never sees message content or sender metadata, and encrypted messages are decrypted client-side when the app tab is open ([#295](https://github.com/SableClient/Sable/pull/295) by @Just-Insane)
+
+### Fixes
+
+* Fix duplicate unread badges on the /direct/ icon for DM rooms already shown as individual sidebar avatars ([#289](https://github.com/SableClient/Sable/pull/289) by @Just-Insane)
+* Fix thread messages to include the required `m.in_reply_to` fallback pointing to the latest thread event, so unthreaded clients can display the reply chain correctly per the Matrix spec. ([#288](https://github.com/SableClient/Sable/pull/288) by @Just-Insane)
+* Fix spurious scroll-to-bottom and MaxListeners warnings on sync gap: stable callback refs and prevEventsLength guard in RoomTimeline, correct CallEmbed .bind(this) listener leak, stable refs in useCallSignaling, and unreadInfoRef to stop per-message listener churn ([#279](https://github.com/SableClient/Sable/pull/279) by @Just-Insane)
+
 ## 1.8.0 (2026-03-14)
 
 ### Features
