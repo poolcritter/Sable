@@ -50,7 +50,7 @@ export function GlobalModalManager() {
 
             {modal.type === ModalType.Source && (
               <Modal variant="Surface" size="300">
-                <MessageSourceInternal room={modal.room} mEvent={modal.mEvent} onClose={close} />
+                <MessageSourceInternal data={modal.data} onClose={close} />
               </Modal>
             )}
 

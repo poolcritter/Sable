@@ -75,7 +75,7 @@ import { useBlobCache } from '$hooks/useBlobCache';
 import { MessageAllReactionItem } from '$components/message/modals/MessageReactions';
 import { MessageReadReceiptItem } from '$components/message/modals/MessageReadRecipts';
 import { MessageEditHistoryItem } from '$components/message/modals/MessageEditHistory';
-import { MessageSourceCodeItem } from '$components/message/modals/MessageSource';
+import { MessageDiffItem, MessageSourceCodeItem } from '$components/message/modals/MessageSource';
 import { MessageForwardItem } from '$components/message/modals/MessageForward';
 import { MessageDeleteItem } from '$components/message/modals/MessageDelete';
 import { MessageReportItem } from '$components/message/modals/MessageReport';
@@ -1388,7 +1388,10 @@ export const Event = as<'div', EventProps>(
                               />
                             )}
                             {showDeveloperTools && (
-                              <MessageSourceCodeItem room={room} mEvent={mEvent} />
+                              <>
+                                <MessageSourceCodeItem room={room} mEvent={mEvent} />
+                                <MessageDiffItem room={room} mEvent={mEvent} />
+                              </>
                             )}
                             <MessageCopyLinkItem room={room} mEvent={mEvent} onClose={closeMenu} />
                             <MessageForwardItem room={room} mEvent={mEvent} onClose={closeMenu} />

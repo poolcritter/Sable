@@ -16,7 +16,7 @@ export type ModalState =
   | { type: ModalType.Delete; room: Room; mEvent: MatrixEvent }
   | { type: ModalType.Forward; room: Room; mEvent: MatrixEvent }
   | { type: ModalType.Report; room: Room; mEvent: MatrixEvent }
-  | { type: ModalType.Source; room: Room; mEvent: MatrixEvent }
+  | { type: ModalType.Source; data: object }
   | { type: ModalType.EditHistory; room: Room; mEvent: MatrixEvent }
   | { type: ModalType.Reactions; room: Room; relations: Relations }
   | { type: ModalType.ReadReceipts; room: Room; eventId: string }
