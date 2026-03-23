@@ -87,6 +87,9 @@ import {
 } from '$utils/addStickerToDefaultStickerPack';
 import {
   convertBeeperFormatToOurPerMessageProfile,
+  convertPerMessageProfileToBeeperFormat,
+  getAllPerMessageProfiles,
+  PerMessageProfile,
   PerMessageProfileBeeperFormat,
 } from '$hooks/usePerMessageProfile';
 import { MessageEditor } from './MessageEditor';
@@ -336,6 +339,89 @@ const Pronouns = as<
   );
 });
 
+function SetPmpMenu({
+  event,
+  room,
+  closeMenu,
+}: {
+  event: MatrixEvent;
+  room: Room;
+  closeMenu: () => void;
+}) {
+  const mx = useMatrixClient();
+  const [profiles, setProfiles] = useState<PerMessageProfile[]>([]);
+
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      const fetchedProfiles = await getAllPerMessageProfiles(mx);
+      setProfiles(fetchedProfiles);
+    };
+    fetchProfiles();
+  }, [mx]);
+
+  const needPfpAuth = useMediaAuthentication();
+
+  function setPmP(profile: PerMessageProfile | null) {
+    const evtId = event.getId();
+    const evtTimeline = evtId ? room.getTimelineForEvent(evtId) : undefined;
+    const editedEvent =
+      evtTimeline && evtId ? getEditedEvent(evtId, event, evtTimeline.getTimelineSet()) : undefined;
+    const resolvedContent = editedEvent
+      ? editedEvent.getContent()['m.new_content']
+      : event.getContent();
+    const newContent = { ...resolvedContent };
+    if (profile) {
+      newContent['com.beeper.per_message_profile'] =
+        convertPerMessageProfileToBeeperFormat(profile);
+    } else {
+      delete newContent['com.beeper.per_message_profile'];
+    }
+    mx.sendMessage(room.roomId, {
+      'm.relates_to': {
+        event_id: evtId,
+        rel_type: 'm.replace',
+      },
+      'm.new_content': newContent,
+    });
+  }
+  return (
+    <>
+      <MenuItem
+        size="300"
+        after={<Icon size="100" src={Icons.Delete} />}
+        radii="300"
+        onClick={() => {
+          setPmP(null);
+          closeMenu();
+        }}
+      >
+        <Text className={css.MessageMenuItemText} as="span" size="T300" truncate>
+          Clear
+        </Text>
+      </MenuItem>
+      {profiles.map((p) => {
+        const pfp = p.avatarUrl && mxcUrlToHttp(mx, p.avatarUrl, needPfpAuth);
+        return (
+          <MenuItem
+            size="300"
+            key={p.id}
+            after={pfp ? <Icon src={() => <img src={pfp} alt="" />} /> : undefined}
+            radii="300"
+            onClick={() => {
+              setPmP(p);
+              closeMenu();
+            }}
+          >
+            <Text className={css.MessageMenuItemText} as="span" size="T300" truncate>
+              {p.name}
+            </Text>
+          </MenuItem>
+        );
+      })}
+    </>
+  );
+}
+
 function MessageInternal(
   {
     className,
@@ -466,6 +552,7 @@ function MessageInternal(
   });
 
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
+  const [personaSubmenuAnchor, setPersonaSubmenuAnchor] = useState<RectCords>();
   const [emojiBoardAnchor, setEmojiBoardAnchor] = useState<RectCords>();
   const [nickEditOpen, setNickEditOpen] = useState(false);
   const [nickDraft, setNickDraft] = useState('');
@@ -481,6 +568,7 @@ function MessageInternal(
 
   const [showPronouns] = useSetting(settingsAtom, 'showPronouns');
   const [parsePronouns] = useSetting(settingsAtom, 'parsePronouns');
+  const [showPersona] = useSetting(settingsAtom, 'showPersonaSetting');
 
   const [useRightBubbles] = useSetting(settingsAtom, 'useRightBubbles');
   const { cleanedDisplayName, inlinePronoun } = useMemo(() => {
@@ -769,9 +857,18 @@ function MessageInternal(
       setMenuAnchor(rect);
     });
   };
+  const handleOpenPersonaMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
+    const target = evt.currentTarget.parentElement?.parentElement ?? evt.currentTarget;
+    const rect = target.getBoundingClientRect();
+
+    window.requestAnimationFrame(() => {
+      setPersonaSubmenuAnchor(rect);
+    });
+  };
 
   const closeMenu = () => {
     setMenuAnchor(undefined);
+    setPersonaSubmenuAnchor(undefined);
     setNickEditOpen(false);
     setMobileOptionsOpen(false);
   };
@@ -1043,6 +1140,45 @@ function MessageInternal(
                               Edit Message
                             </Text>
                           </MenuItem>
+                        )}
+                        {canEditEvent(mx, mEvent) && showPersona && (
+                          <PopOut
+                            anchor={personaSubmenuAnchor}
+                            position="Right"
+                            content={
+                              <FocusTrap
+                                focusTrapOptions={{
+                                  initialFocus: false,
+                                  onDeactivate: () => setMenuAnchor(undefined),
+                                  clickOutsideDeactivates: true,
+                                  isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
+                                  isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
+                                  escapeDeactivates: stopPropagation,
+                                }}
+                              >
+                                <Menu>
+                                  <SetPmpMenu event={mEvent} room={room} closeMenu={closeMenu} />
+                                </Menu>
+                              </FocusTrap>
+                            }
+                          >
+                            <MenuItem
+                              size="300"
+                              after={<Icon size="100" src={Icons.Pencil} />}
+                              radii="300"
+                              data-event-id={mEvent.getId()}
+                              onMouseEnter={handleOpenPersonaMenu}
+                            >
+                              <Text
+                                className={css.MessageMenuItemText}
+                                as="span"
+                                size="T300"
+                                truncate
+                              >
+                                Change Sender
+                              </Text>
+                            </MenuItem>
+                          </PopOut>
                         )}
                         {!hideReadReceipts && (
                           <MessageReadReceiptItem room={room} eventId={mEvent.getId() ?? ''} />
